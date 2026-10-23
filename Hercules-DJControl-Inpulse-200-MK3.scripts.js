@@ -7,22 +7,23 @@
 // eslint-disable-next-line no-var
 var DJCi200mk3 = {};
 
-// === SETTINGS – change the behaviour here without touching the code ===
+// === SETTINGS – Preferences → Controllers → this mapping (defined in <settings> in the XML) ===
 
-DJCi200mk3.scratchScale = 1.0;          // scratch speed (e.g. 0.5 = half, 2 = double)
-DJCi200mk3.scratchShiftMultiplier = 4;  // SHIFT + jog: how many times faster to seek through the track
-DJCi200mk3.bendScale = 1.0;             // pitch bend strength (nudging the tempo with the jog)
-DJCi200mk3.vinylOnStartup = true;       // whether Vinyl (scratch) mode is on at startup
-DJCi200mk3.useStems = true;             // Stems buttons: stems on Mixxx 2.6+ for stem tracks (false = always Brake / Spinback)
-DJCi200mk3.vocalsStem = 4;              // number of the vocals stem in stem files (NI Stems: drums, bass, other, vocals)
-DJCi200mk3.brakeFactor = 1.0;           // Brake: higher number = faster stop
-DJCi200mk3.spinbackFactor = 1.8;        // Spinback: higher number = longer backspin
-DJCi200mk3.guideTempoTolerance = 0.1;   // Guide: BPM difference still considered a tempo match
-DJCi200mk3.guidePhaseTolerance = 0.03;  // Guide: beat offset (fraction of a beat) still considered aligned
-DJCi200mk3.pickupThreshold = 0.03;      // shared knobs: how close (0–1) the knob must be to "catch" the value
-DJCi200mk3.browseFastStep = 10;         // SHIFT + browser encoder: how many tracks per step
+DJCi200mk3.vinylOnStartup = engine.getSetting("vinylOnStartup") ?? true;
+DJCi200mk3.scratchScale = engine.getSetting("scratchScale") ?? 1.0;
+DJCi200mk3.scratchShiftMultiplier = engine.getSetting("scratchShiftMultiplier") ?? 4;
+DJCi200mk3.bendScale = engine.getSetting("bendScale") ?? 1.0;
+DJCi200mk3.useStems = engine.getSetting("useStems") ?? true;
+DJCi200mk3.vocalsStem = engine.getSetting("vocalsStem") ?? 4;
+DJCi200mk3.brakeFactor = engine.getSetting("brakeFactor") ?? 1.0;
+DJCi200mk3.spinbackFactor = engine.getSetting("spinbackFactor") ?? 1.8;
+DJCi200mk3.guideTempoTolerance = engine.getSetting("guideTempoTolerance") ?? 0.1;
+DJCi200mk3.guidePhaseTolerance = engine.getSetting("guidePhaseTolerance") ?? 0.03;
+DJCi200mk3.browseFastStep = engine.getSetting("browseFastStep") ?? 10;
 
 // === CONSTANTS AND STATE ===
+
+DJCi200mk3.PICKUP_THRESHOLD = 0.03;  // shared knobs: how close (0–1) the knob must be to "catch" the value
 
 // What the jog wheel is currently doing
 DJCi200mk3.ACTION_NONE = 0;     // nothing (jog not touched)
@@ -297,14 +298,14 @@ DJCi200mk3._pickup = function(status, which, value) {
     k.locked[other] = false;  // the other function will have to be "caught" again
 
     // Value was changed by something else meanwhile (mouse, other controller) → release
-    if (k.locked[which] && Math.abs(current - k.lastSet[which]) > DJCi200mk3.pickupThreshold / 3) {
+    if (k.locked[which] && Math.abs(current - k.lastSet[which]) > DJCi200mk3.PICKUP_THRESHOLD / 3) {
         k.locked[which] = false;
     }
 
     if (DJCi200mk3.startupSync) {
         k.locked[which] = true;  // startup position from the controller
     } else if (!k.locked[which]) {
-        const near = Math.abs(knobPos - current) <= DJCi200mk3.pickupThreshold;
+        const near = Math.abs(knobPos - current) <= DJCi200mk3.PICKUP_THRESHOLD;
         const crossed = k.pos !== null && (k.pos - current) * (knobPos - current) <= 0;
         k.locked[which] = near || crossed;
     }
@@ -355,7 +356,7 @@ DJCi200mk3.scratchWheel = function(_channel, _control, value, status, group) {
         engine.scratchTick(deck, dir);
         break;
     case DJCi200mk3.ACTION_SEEK:
-        engine.scratchTick(deck, dir * Math.round(DJCi200mk3.scratchShiftMultiplier));
+        engine.scratchTick(deck, dir * DJCi200mk3.scratchShiftMultiplier);
         break;
     default:
         engine.setValue(group, "jog", dir * DJCi200mk3.bendScale);

@@ -168,6 +168,9 @@ The :hwlabel:`BEATMATCH GUIDE` button is handled by the controller itself: when 
 Mapping options
 ~~~~~~~~~~~~~~~
 
-The behavior of the mapping can be adjusted with variables at the top of the script file ``Hercules-DJControl-Inpulse-200-MK3.scripts.js``,
-for example the scratch and pitch bend sensitivity, whether Vinyl mode is on at startup, the Brake and Spinback speed and the tolerances of the Beatmatch Guide.
-Set ``useStems`` to ``false`` to always use Brake and Spinback on the Stems buttons, and ``vocalsStem`` if the vocals are not the last stem of your stem files.
+The behavior of the mapping can be adjusted in :guilabel:`Preferences > Controllers > DJControl Inpulse 200 MK3`:
+
+-  **Jog wheel**: Vinyl mode at startup, scratch speed, fast seek speed (:hwlabel:`SHIFT` + jog wheel) and pitch bend strength.
+-  **Stems buttons**: whether they control stems (Mixxx 2.6 and newer, otherwise always Brake and Spinback), the number of the vocals stem in your stem files, Brake speed and Spinback length.
+-  **Beatmatch Guide**: the tempo and Beat Align tolerances.
+-  **Library**: how many tracks :hwlabel:`SHIFT` + browser encoder moves per step.

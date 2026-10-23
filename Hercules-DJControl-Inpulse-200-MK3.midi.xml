@@ -26,6 +26,49 @@
         <description>Mapping for the Hercules DJControl Inpulse 200 MK3. 3-band EQ, SHIFT knob layer (gain, effects, key), Stems buttons (stems on Mixxx 2.6+, otherwise Brake / Spinback), manual loop, Beatmatch Guide, mix recording.</description>
         <manual>hercules_djcontrol_inpulse_200_mk3</manual>
     </info>
+    <settings>
+        <group label="Jog wheel">
+            <option variable="vinylOnStartup" type="boolean" default="true" label="Vinyl mode on at startup">
+                <description>Vinyl (scratch) mode of both decks when the mapping starts. :hwbtn:`SHIFT` + :hwbtn:`LOOP` toggles it per deck.</description>
+            </option>
+            <option variable="scratchScale" type="real" min="0.25" max="4.0" step="0.05" precision="2" default="1.0" label="Scratch speed">
+                <description>How far the track moves when scratching: 0.5 = half, 2 = double.</description>
+            </option>
+            <option variable="scratchShiftMultiplier" type="integer" min="1" max="16" default="4" label="Fast seek speed">
+                <description>:hwbtn:`SHIFT` + jog wheel: how many times faster than scratching it seeks through the track.</description>
+            </option>
+            <option variable="bendScale" type="real" min="0.1" max="4.0" step="0.1" precision="1" default="1.0" label="Pitch bend strength">
+                <description>How strongly the jog wheel nudges the tempo of a playing track.</description>
+            </option>
+        </group>
+        <group label="Stems buttons">
+            <option variable="useStems" type="boolean" default="true" label="Control stems (Mixxx 2.6 and newer)">
+                <description>For stem tracks the Stems buttons play the instrumental / vocals only. When off, or for other tracks, they work as Brake and Spinback.</description>
+            </option>
+            <option variable="vocalsStem" type="integer" min="1" max="4" default="4" label="Vocals stem">
+                <description>Number of the vocals stem in your stem files (NI Stems: 1 drums, 2 bass, 3 other, 4 vocals).</description>
+            </option>
+            <option variable="brakeFactor" type="real" min="0.1" max="10.0" step="0.1" precision="1" default="1.0" label="Brake speed">
+                <description>Higher value = the track stops faster.</description>
+            </option>
+            <option variable="spinbackFactor" type="real" min="0.1" max="10.0" step="0.1" precision="1" default="1.8" label="Spinback length">
+                <description>Higher value = longer backspin.</description>
+            </option>
+        </group>
+        <group label="Beatmatch Guide">
+            <option variable="guideTempoTolerance" type="real" min="0.01" max="1.0" step="0.01" precision="2" default="0.1" label="Tempo tolerance (BPM)">
+                <description>BPM difference that still counts as a tempo match (Tempo arrows off).</description>
+            </option>
+            <option variable="guidePhaseTolerance" type="real" min="0.01" max="0.25" step="0.01" precision="2" default="0.03" label="Beat Align tolerance (beats)">
+                <description>Beat offset, as a fraction of a beat, that still counts as aligned (Beat Align arrows off).</description>
+            </option>
+        </group>
+        <group label="Library">
+            <option variable="browseFastStep" type="integer" min="1" max="50" default="10" label="Fast scrolling step">
+                <description>:hwbtn:`SHIFT` + browser encoder: how many tracks per step.</description>
+            </option>
+        </group>
+    </settings>
     <controller id="DJControl Inpulse 200 MK3">
         <scriptfiles>
             <file functionprefix="DJCi200mk3" filename="Hercules-DJControl-Inpulse-200-MK3.scripts.js"/>

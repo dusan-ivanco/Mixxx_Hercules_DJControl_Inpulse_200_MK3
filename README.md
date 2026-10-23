@@ -11,7 +11,7 @@ The stems function of the Stems buttons needs Mixxx 2.6 and has not been tested 
 | File | Contents |
 |---|---|
 | `Hercules-DJControl-Inpulse-200-MK3.midi.xml` | maps the controller's MIDI messages to Mixxx controls and LEDs; MIDI message overview in the header comment |
-| `Hercules-DJControl-Inpulse-200-MK3.scripts.js` | script with the logic (jog, knob pickup, loops, Beatmatch Guide…); settings at the top of the file |
+| `Hercules-DJControl-Inpulse-200-MK3.scripts.js` | script with the logic (jog, knob pickup, loops, Beatmatch Guide…) |
 | `manual/hercules_djcontrol_inpulse_200_mk3.rst` | user documentation – all controls, pad modes, Beatmatch Guide |
 
 File names follow the Mixxx convention, so the mapping and script can be copied to `res/controllers/`
@@ -25,7 +25,8 @@ of the [Mixxx repository](https://github.com/mixxxdj/mixxx) as they are, and the
    (macOS: `~/Library/Containers/org.mixxx.mixxx/Data/Library/Application Support/Mixxx/controllers`).
 2. Mixxx → **Preferences → Controllers** → *DJControl Inpulse 200 MK3* → enable it and select
    the *Hercules DJControl Inpulse 200 MK3* mapping.
-3. After editing the files, reload the mapping in Mixxx (or restart Mixxx).
+3. Options (scratch speed, Vinyl at startup, stems, Beatmatch Guide tolerances…) are on the same page in the mapping settings.
+4. After editing the files, reload the mapping in Mixxx (or restart Mixxx).
 
 ## Usage
 
