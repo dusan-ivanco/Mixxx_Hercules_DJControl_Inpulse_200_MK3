@@ -18,7 +18,7 @@
              0x91: 0x21/0x22 Beat Align left/right, 0x23/0x24 Tempo down/up; 0x94 0x03 Vinyl;
              0x90: 0x03 Assistant, 0x04 browser (0x05 blue, 0x07 green)
              SHIFT LEDs (0x93-0x95, pads +0x08) are a separate layer, the controller shows it while SHIFT is held
-    Unused   SHIFT + Assistant (faders work the same with and without SHIFT)
+    Unused   SHIFT + BEATMATCH GUIDE (0x93 0x01); Assistant and crossfader send the same message with SHIFT
 -->
 <MixxxMIDIPreset mixxxVersion="2.5" schemaVersion="1">
     <info>
