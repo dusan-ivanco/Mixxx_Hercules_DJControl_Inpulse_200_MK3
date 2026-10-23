@@ -12,7 +12,7 @@ The stems function of the Stems buttons needs Mixxx 2.6 and has not been tested 
 |---|---|
 | `Hercules-DJControl-Inpulse-200-MK3.midi.xml` | maps the controller's MIDI messages to Mixxx controls and LEDs; MIDI message overview in the header comment |
 | `Hercules-DJControl-Inpulse-200-MK3.scripts.js` | script with the logic (jog, knob pickup, loops, Beatmatch Guide…) |
-| `manual/hercules_djcontrol_inpulse_200_mk3.rst` | user documentation – all controls, pad modes, Beatmatch Guide |
+| `manual/hercules_djcontrol_inpulse_200_mk3.md` | user documentation – all controls, pad modes, Beatmatch Guide |
 
 File names follow the Mixxx convention, so the mapping and script can be copied to `res/controllers/`
 of the [Mixxx repository](https://github.com/mixxxdj/mixxx) as they are, and the manual page to
@@ -30,7 +30,7 @@ of the [Mixxx repository](https://github.com/mixxxdj/mixxx) as they are, and the
 
 ## Usage
 
-See [the user manual page](manual/hercules_djcontrol_inpulse_200_mk3.rst) for the description of all controls.
+See [the user manual page](manual/hercules_djcontrol_inpulse_200_mk3.md) for the description of all controls.
 
 ## Diagnostics – finding a MIDI code
 

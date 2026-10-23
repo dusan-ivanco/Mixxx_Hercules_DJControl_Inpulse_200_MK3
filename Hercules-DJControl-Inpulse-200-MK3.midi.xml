@@ -18,7 +18,7 @@
              0x91: 0x21/0x22 Beat Align left/right, 0x23/0x24 Tempo down/up; 0x94 0x03 Vinyl;
              0x90: 0x03 Assistant, 0x04 browser (0x05 blue, 0x07 green)
              SHIFT LEDs (0x93-0x95, pads +0x08) are a separate layer, the controller shows it while SHIFT is held
-    Unused   SHIFT + pitch fader (0xB4 0x08), SHIFT + Assistant, SHIFT + deck volume
+    Unused   SHIFT + Assistant (faders work the same with and without SHIFT)
 -->
 <MixxxMIDIPreset mixxxVersion="2.5" schemaVersion="1">
     <info>
@@ -50,7 +50,7 @@
                 <description>Number of the vocals stem in your stem files (NI Stems: 1 drums, 2 bass, 3 other, 4 vocals).</description>
             </option>
             <option variable="brakeFactor" type="real" min="0.6" max="10.0" step="0.1" precision="1" default="1.0" label="Brake speed">
-                <description>Higher value = the track stops faster (lower values than 0.6 would never come to a full stop).</description>
+                <description>Higher value = the track stops faster (below 0.6 the track takes many seconds to stop).</description>
             </option>
             <option variable="spinbackFactor" type="real" min="0.1" max="10.0" step="0.1" precision="1" default="1.8" label="Spinback speed">
                 <description>Higher value = the track spins backward faster.</description>
@@ -410,6 +410,16 @@
             </control>
             <control>
                 <group>[Channel1]</group>
+                <key>volume</key>
+                <description>Volume with SHIFT held – deck A</description>
+                <status>0xB4</status>
+                <midino>0x00</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
                 <key>DJCi200mk3.pitchFaderMsb</key>
                 <description>Pitch fader (MSB) – deck A</description>
                 <status>0xB1</status>
@@ -423,6 +433,26 @@
                 <key>DJCi200mk3.pitchFaderLsb</key>
                 <description>Pitch fader (LSB) – deck A</description>
                 <status>0xB1</status>
+                <midino>0x28</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>DJCi200mk3.pitchFaderMsb</key>
+                <description>Pitch fader (MSB) with SHIFT held – deck A</description>
+                <status>0xB4</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>DJCi200mk3.pitchFaderLsb</key>
+                <description>Pitch fader (LSB) with SHIFT held – deck A</description>
+                <status>0xB4</status>
                 <midino>0x28</midino>
                 <options>
                     <script-binding/>
@@ -1067,6 +1097,16 @@
             </control>
             <control>
                 <group>[Channel2]</group>
+                <key>volume</key>
+                <description>Volume with SHIFT held – deck B</description>
+                <status>0xB5</status>
+                <midino>0x00</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
                 <key>DJCi200mk3.pitchFaderMsb</key>
                 <description>Pitch fader (MSB) – deck B</description>
                 <status>0xB2</status>
@@ -1080,6 +1120,26 @@
                 <key>DJCi200mk3.pitchFaderLsb</key>
                 <description>Pitch fader (LSB) – deck B</description>
                 <status>0xB2</status>
+                <midino>0x28</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>DJCi200mk3.pitchFaderMsb</key>
+                <description>Pitch fader (MSB) with SHIFT held – deck B</description>
+                <status>0xB5</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>DJCi200mk3.pitchFaderLsb</key>
+                <description>Pitch fader (LSB) with SHIFT held – deck B</description>
+                <status>0xB5</status>
                 <midino>0x28</midino>
                 <options>
                     <script-binding/>
@@ -1509,9 +1569,31 @@
             </output>
             <output>
                 <group>[Channel1]</group>
+                <key>play_indicator</key>
+                <description>Play LED with SHIFT – deck A</description>
+                <status>0x94</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
                 <key>cue_indicator</key>
                 <description>Cue LED – deck A</description>
                 <status>0x91</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>cue_indicator</key>
+                <description>Cue LED with SHIFT – deck A</description>
+                <status>0x94</status>
                 <midino>0x06</midino>
                 <on>0x7F</on>
                 <off>0x00</off>
@@ -1883,9 +1965,31 @@
             </output>
             <output>
                 <group>[Channel2]</group>
+                <key>play_indicator</key>
+                <description>Play LED with SHIFT – deck B</description>
+                <status>0x95</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
                 <key>cue_indicator</key>
                 <description>Cue LED – deck B</description>
                 <status>0x92</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>cue_indicator</key>
+                <description>Cue LED with SHIFT – deck B</description>
+                <status>0x95</status>
                 <midino>0x06</midino>
                 <on>0x7F</on>
                 <off>0x00</off>

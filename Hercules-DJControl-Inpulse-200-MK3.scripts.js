@@ -25,6 +25,8 @@ DJCi200mk3.browseFastStep = engine.getSetting("browseFastStep") ?? 10;
 
 DJCi200mk3.PICKUP_THRESHOLD = 0.03;  // shared knobs: how close (0–1) the knob must be to "catch" the value
 DJCi200mk3.LOOP_RESIZE_TICKS = 64;  // SHIFT + jog ring: ticks per halving / doubling of the loop
+// Beatloop sizes Mixxx has beatloop_X_enabled controls for
+DJCi200mk3.BEATLOOP_SIZES = [0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512];
 
 // What the jog wheel is currently doing
 DJCi200mk3.ACTION_NONE = 0;     // nothing (jog not touched)
@@ -66,8 +68,6 @@ DJCi200mk3.init = function() {
         DJCi200mk3.scratchAction[deck] = DJCi200mk3.ACTION_NONE;
         DJCi200mk3._setVinylLed(deck);
     }
-
-    midi.sendShortMsg(0x90, DJCi200mk3.BROWSER_LED, 0x05);  // browser LED on (blue)
 
     // Beatmatch Guide: arrows are recalculated 20× per second
     DJCi200mk3.guideTimer = engine.beginTimer(50, DJCi200mk3._updateGuide);
@@ -220,7 +220,12 @@ DJCi200mk3.loopResizeWheel = function(_channel, _control, value, _status, group)
     let total = DJCi200mk3.loopResizeTicks[deck];
     total = Math.sign(total) === -Math.sign(ticks) ? ticks : total + ticks;  // direction changed: start again
     if (Math.abs(total) >= DJCi200mk3.LOOP_RESIZE_TICKS) {
-        engine.setValue(group, "loop_scale", total > 0 ? 2 : 0.5);
+        if (DJCi200mk3.BEATLOOP_SIZES.some(size => engine.getValue(group, `beatloop_${size}_enabled`))) {
+            // Beatloop (e.g. from a pad): resize through the beatloop size, so its pad LED and toggle keep working
+            DJCi200mk3._press(group, total > 0 ? "loop_double" : "loop_halve");
+        } else {
+            engine.setValue(group, "loop_scale", total > 0 ? 2 : 0.5);
+        }
         total = 0;
     }
     DJCi200mk3.loopResizeTicks[deck] = total;
@@ -408,9 +413,10 @@ DJCi200mk3._touch = function(deck, touched, action) {
 };
 
 DJCi200mk3._scratchEnable = function(deck) {
-    // Catching the record during a Brake / Spinback started by the mapping: end it first, otherwise Mixxx would
-    // end the scratch at once (Spinback) or keep its brake state (Brake)
-    if (DJCi200mk3.brakeStarted[deck] && engine.isScratching(deck)) {
+    // Catching the record during a Brake / Spinback started by the mapping: end it first (otherwise its timer would
+    // keep driving the deck) and start the scratch from standstill, as a record stopped by the hand
+    const catching = DJCi200mk3.brakeStarted[deck] && engine.isScratching(deck);
+    if (catching) {
         engine.brake(deck, false);
     }
     DJCi200mk3.brakeStarted[deck] = false;
@@ -418,7 +424,7 @@ DJCi200mk3._scratchEnable = function(deck) {
     // Scratch speed: fewer ticks per revolution = each tick moves the track further
     const intervalsPerRev = Math.round(248 / DJCi200mk3.scratchScale);
     const alpha = 1.0 / 8;
-    engine.scratchEnable(deck, intervalsPerRev, 33 + 1 / 3, alpha, alpha / 32);
+    engine.scratchEnable(deck, intervalsPerRev, 33 + 1 / 3, alpha, alpha / 32, !catching);
 };
 
 // === BEATMATCH GUIDE – TEMPO AND BEAT ALIGN ARROWS ===
@@ -436,7 +442,7 @@ DJCi200mk3._updateGuide = function() {
         const group = `[Channel${deck}]`;
         const state = DJCi200mk3._guideState(group, `[Channel${3 - deck}]`);
 
-        // The fader sends the lowest value at the top, so with the default rate_dir (1) down is faster
+        // The fader sends the lowest value at the top: with rate_dir -1 (Mixxx default) up is faster, with 1 down
         const upIsFaster = engine.getValue(group, "rate_dir") < 0;
         DJCi200mk3._arrow(deck, "tempoUp", upIsFaster ? state.faster : state.slower);
         DJCi200mk3._arrow(deck, "tempoDown", upIsFaster ? state.slower : state.faster);
