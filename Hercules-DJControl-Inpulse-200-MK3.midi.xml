@@ -13,9 +13,10 @@
     Knobs    0xB1: 0x00 volume, 0x01 filter, 0x02 low, 0x04 mid, 0x05 gain/high, 0x08/0x28 pitch MSB/LSB,
              0x09 jog ring, 0x0A jog top
     Global   0xB0: 0x00 crossfader, 0x01 browser, 0x03/0x04 master/headphones volume (hardware, not mapped)
-             0x90: 0x00 browser press, 0x01 BEATMATCH GUIDE, 0x02 MASTER, 0x03 Assistant
+             0x90: 0x00 browser press, 0x01 BEATMATCH GUIDE, 0x02 MASTER (hardware, not mapped), 0x03 Assistant
     LEDs     0x91: 0x21/0x22 Beat Align left/right, 0x23/0x24 Tempo down/up; 0x94 0x03 Vinyl;
-             0x90: 0x02 MASTER, 0x04 browser
+             0x90: 0x04 browser
+             SHIFT LEDs (0x93-0x95, pads +0x08) are a separate layer, the controller shows it while SHIFT is held
     Unused   SHIFT + pitch fader (0xB4 0x08), SHIFT + Assistant, SHIFT + jog ring, SHIFT + deck volume
 -->
 <MixxxMIDIPreset mixxxVersion="2.5" schemaVersion="1">
@@ -81,19 +82,6 @@
                     <normal/>
                 </options>
             </control>
-            <!-- TODO: MASTER is disabled while testing whether the controller routes the main mix to the headphones
-                 in hardware. If not, uncomment this and the MASTER LED code in init/shutdown of the script.
-            <control>
-                <group>[Master]</group>
-                <key>DJCi200mk3.masterButton</key>
-                <description>MASTER: headphones main mix only / cued decks only</description>
-                <status>0x90</status>
-                <midino>0x02</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            -->
             <control>
                 <group>[Recording]</group>
                 <key>toggle_recording</key>
@@ -378,24 +366,22 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>rate</key>
+                <key>DJCi200mk3.pitchFaderMsb</key>
                 <description>Pitch fader (MSB) – deck A</description>
                 <status>0xB1</status>
                 <midino>0x08</midino>
                 <options>
-                    <fourteen-bit-msb/>
-                    <soft-takeover/>
+                    <script-binding/>
                 </options>
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>rate</key>
+                <key>DJCi200mk3.pitchFaderLsb</key>
                 <description>Pitch fader (LSB) – deck A</description>
                 <status>0xB1</status>
                 <midino>0x28</midino>
                 <options>
-                    <fourteen-bit-lsb/>
-                    <soft-takeover/>
+                    <script-binding/>
                 </options>
             </control>
             <!-- =================== DECK A – JOG WHEEL =================== -->
@@ -1027,24 +1013,22 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>rate</key>
+                <key>DJCi200mk3.pitchFaderMsb</key>
                 <description>Pitch fader (MSB) – deck B</description>
                 <status>0xB2</status>
                 <midino>0x08</midino>
                 <options>
-                    <fourteen-bit-msb/>
-                    <soft-takeover/>
+                    <script-binding/>
                 </options>
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>rate</key>
+                <key>DJCi200mk3.pitchFaderLsb</key>
                 <description>Pitch fader (LSB) – deck B</description>
                 <status>0xB2</status>
                 <midino>0x28</midino>
                 <options>
-                    <fourteen-bit-lsb/>
-                    <soft-takeover/>
+                    <script-binding/>
                 </options>
             </control>
             <!-- =================== DECK B – JOG WHEEL =================== -->

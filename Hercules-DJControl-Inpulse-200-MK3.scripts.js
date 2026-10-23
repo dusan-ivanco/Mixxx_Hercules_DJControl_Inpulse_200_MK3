@@ -34,7 +34,6 @@ DJCi200mk3.ACTION_BEND = 3;     // tempo nudge while playing
 DJCi200mk3.SHIFT_STATUS = {1: 0x94, 2: 0x95};  // MIDI channel of the SHIFT layer of deck A / B
 DJCi200mk3.VINYL_LED = 0x03;                   // Vinyl LED (on the SHIFT layer of the Loop button)
 DJCi200mk3.BROWSER_LED = 0x04;                 // browser button LED
-DJCi200mk3.MASTER_BUTTON_LED = 0x02;           // MASTER button LED (channel 0x90)
 DJCi200mk3.DECK_STATUS = {1: 0x91, 2: 0x92};   // MIDI channel of the buttons / LEDs of deck A / B
 // Beatmatch Guide arrows on each deck (LED code, same for deck A and B)
 DJCi200mk3.ARROW = {
@@ -52,6 +51,8 @@ DJCi200mk3.knob = {1: {}, 2: {}};
 DJCi200mk3.guideTimer = 0;
 DJCi200mk3.ledCache = {};  // last arrow state – only changes are sent
 DJCi200mk3.stemsAvailable = false;  // Mixxx supports stems (2.6+), detected in init
+DJCi200mk3.startupSync = false;  // true right after init: knob positions sent by the controller are taken over directly
+DJCi200mk3.pitchMsb = {1: 0x40, 2: 0x40};  // pitch fader: upper 7 bits, completed by the LSB message
 
 // === STARTUP AND SHUTDOWN ===
 
@@ -64,16 +65,18 @@ DJCi200mk3.init = function() {
 
     midi.sendShortMsg(0x90, DJCi200mk3.BROWSER_LED, 0x05);  // browser LED on (blue)
 
-    // MASTER button: LED reflects whether the main mix is in the headphones
-    // TODO: disabled while testing whether the controller handles MASTER in hardware (see the MASTER control in the XML)
-    // engine.makeConnection("[Master]", "headMix", DJCi200mk3._updateMasterLed);
-    // DJCi200mk3._updateMasterLed(engine.getValue("[Master]", "headMix"));
-
     // Beatmatch Guide: arrows are recalculated 20× per second
     DJCi200mk3.guideTimer = engine.beginTimer(50, DJCi200mk3._updateGuide);
 
-    // Ask the controller to send the current position of all knobs and faders
+    // Ask the controller to send the current position of all knobs and faders. Pickup and soft takeover would
+    // ignore these first values, so for a moment they are taken over directly
+    DJCi200mk3.startupSync = true;
     midi.sendShortMsg(0xB0, 0x7F, 0x7F);
+    engine.beginTimer(500, function() {
+        DJCi200mk3.startupSync = false;
+        engine.softTakeover("[Channel1]", "rate", true);
+        engine.softTakeover("[Channel2]", "rate", true);
+    }, true);
 
     // Stem controls exist only in Mixxx 2.6 and newer. Older versions log one warning about the unknown control
     // (it is the last step, so with --controller-abort-on-warning nothing else in init is skipped)
@@ -91,7 +94,6 @@ DJCi200mk3.shutdown = function() {
         }
         midi.sendShortMsg(DJCi200mk3.SHIFT_STATUS[deck], DJCi200mk3.VINYL_LED, 0x00);
     }
-    // midi.sendShortMsg(0x90, DJCi200mk3.MASTER_BUTTON_LED, 0x00);  // TODO: MASTER button disabled, see init
     midi.sendShortMsg(0xB0, 0x7F, 0x7E);
     midi.sendShortMsg(0x90, DJCi200mk3.BROWSER_LED, 0x00);
 };
@@ -102,20 +104,6 @@ DJCi200mk3.shutdown = function() {
 DJCi200mk3.browseFast = function(_channel, _control, value, _status, _group) {
     const steps = DJCi200mk3._relative(value);
     engine.setValue("[Library]", "MoveVertical", steps * DJCi200mk3.browseFastStep);
-};
-
-// MASTER button: headphones play the main mix only (as the audience hears it) / the cued decks only
-// (currently not mapped in the XML, see init)
-DJCi200mk3.masterButton = function(_channel, _control, value, _status, _group) {
-    if (!value) {
-        return;
-    }
-    const on = engine.getValue("[Master]", "headMix") > -0.9;
-    engine.setValue("[Master]", "headMix", on ? -1 : 1);
-};
-
-DJCi200mk3._updateMasterLed = function(headMix) {
-    midi.sendShortMsg(0x90, DJCi200mk3.MASTER_BUTTON_LED, headMix > -0.9 ? 0x7F : 0x00);
 };
 
 // === DECK BUTTONS ===
@@ -302,7 +290,9 @@ DJCi200mk3._pickup = function(status, which, value) {
         k.locked[which] = false;
     }
 
-    if (!k.locked[which]) {
+    if (DJCi200mk3.startupSync) {
+        k.locked[which] = true;  // startup position from the controller
+    } else if (!k.locked[which]) {
         const near = Math.abs(knobPos - current) <= DJCi200mk3.pickupThreshold;
         const crossed = k.pos !== null && (k.pos - current) * (knobPos - current) <= 0;
         k.locked[which] = near || crossed;
@@ -316,6 +306,18 @@ DJCi200mk3._pickup = function(status, which, value) {
         }
         k.lastSet[which] = engine.getParameter(group, key);
     }
+};
+
+// === PITCH FADER ===
+
+// 14-bit pitch fader: the MSB message comes first, the LSB message completes the value
+DJCi200mk3.pitchFaderMsb = function(_channel, _control, value, status, _group) {
+    DJCi200mk3.pitchMsb[DJCi200mk3._deck(status)] = value;
+};
+
+DJCi200mk3.pitchFaderLsb = function(_channel, _control, value, status, group) {
+    const position = (DJCi200mk3.pitchMsb[DJCi200mk3._deck(status)] << 7) | value;  // 0–16383, centre 8192
+    engine.setValue(group, "rate", position < 8192 ? position / 8192 - 1 : (position - 8192) / 8191);
 };
 
 // === JOG WHEEL ===
