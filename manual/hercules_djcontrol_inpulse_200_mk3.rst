@@ -29,7 +29,7 @@ This controller has a built-in 4 channel output sound card, with :hwlabel:`MASTE
 
 .. note::
    The :hwlabel:`MASTER` and :hwlabel:`HEADPHONES` volume knobs and the :hwlabel:`MASTER` button are hardware controls of the integrated sound card and are not mapped in Mixxx.
-   The :hwlabel:`MASTER` button routes the main output to the headphones output.
+   The :hwlabel:`MASTER` button routes the main output to the headphones output. :hwlabel:`SHIFT` + :hwlabel:`MASTER` starts and stops recording the mix.
 
 Mapping description
 -------------------
@@ -53,7 +53,7 @@ Play button                                                      Play/Pause the 
 :hwlabel:`SHIFT` + :hwlabel:`CUE` button                         Play from the beginning of the track.
 :hwlabel:`SYNC` button                                           Short press: match tempo and phase to the other deck once. Hold: enable :ref:`Sync Lock <sync-lock>`, press again to disable it.
 :hwlabel:`SHIFT` + :hwlabel:`SYNC` button                        Make the deck Sync leader.
-:hwlabel:`LOOP` button                                           Manual loop: first press sets the loop in point, second press sets the loop out point, third press disables the loop.
+:hwlabel:`LOOP` button                                           Manual loop: first press sets the loop in point, second press sets the loop out point, third press disables the loop. A second press before the loop in point sets a new loop in point.
 :hwlabel:`SHIFT` + :hwlabel:`LOOP` button                        Toggle Vinyl (scratch) mode (default: on). The :hwlabel:`LOOP` LED shows the state while :hwlabel:`SHIFT` is held.
 Left Stems button                                                Stem track: play the instrumental only (vocals muted), press again to play all stems. Other tracks: Brake, the track slows down to a stop.
 :hwlabel:`SHIFT` + left Stems button                             Halve the active loop.

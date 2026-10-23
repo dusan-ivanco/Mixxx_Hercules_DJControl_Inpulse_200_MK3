@@ -5,11 +5,11 @@
 
 // Must be "var": Mixxx looks up init/shutdown as a property of the global object, which const/let do not create
 // eslint-disable-next-line no-var
-var DJCi200mk3 = {}; // NOSONAR
+var DJCi200mk3 = {};
 
 // === SETTINGS – change the behaviour here without touching the code ===
 
-DJCi200mk3.scratchScale = 1.0;          // scratch speed
+DJCi200mk3.scratchScale = 1.0;          // scratch speed (e.g. 0.5 = half, 2 = double)
 DJCi200mk3.scratchShiftMultiplier = 4;  // SHIFT + jog: how many times faster to seek through the track
 DJCi200mk3.bendScale = 1.0;             // pitch bend strength (nudging the tempo with the jog)
 DJCi200mk3.vinylOnStartup = true;       // whether Vinyl (scratch) mode is on at startup
@@ -19,7 +19,6 @@ DJCi200mk3.brakeFactor = 1.0;           // Brake: higher number = faster stop
 DJCi200mk3.spinbackFactor = 1.8;        // Spinback: higher number = longer backspin
 DJCi200mk3.guideTempoTolerance = 0.1;   // Guide: BPM difference still considered a tempo match
 DJCi200mk3.guidePhaseTolerance = 0.03;  // Guide: beat offset (fraction of a beat) still considered aligned
-DJCi200mk3.guideTempoInvert = true;     // Guide: invert the Tempo arrows (true = verified on this controller)
 DJCi200mk3.pickupThreshold = 0.03;      // shared knobs: how close (0–1) the knob must be to "catch" the value
 DJCi200mk3.browseFastStep = 10;         // SHIFT + browser encoder: how many tracks per step
 
@@ -45,7 +44,8 @@ DJCi200mk3.ARROW = {
 
 DJCi200mk3.vinylMode = {1: true, 2: true};
 DJCi200mk3.scratchAction = {1: DJCi200mk3.ACTION_NONE, 2: DJCi200mk3.ACTION_NONE};
-DJCi200mk3.loopInSet = {1: false, 2: false};  // Loop button: loop start has been set
+DJCi200mk3.loopIn = {1: -1, 2: -1};  // Loop button: loop start position it has set, -1 = none
+DJCi200mk3.spinbackHeld = {1: false, 2: false};  // right Stems button is holding a Spinback
 // State per deck and physical knob: last position, "caught" values
 DJCi200mk3.knob = {1: {}, 2: {}};
 DJCi200mk3.guideTimer = 0;
@@ -78,8 +78,8 @@ DJCi200mk3.init = function() {
         engine.softTakeover("[Channel2]", "rate", true);
     }, true);
 
-    // Stem controls exist only in Mixxx 2.6 and newer. Older versions log one warning about the unknown control
-    // (it is the last step, so with --controller-abort-on-warning nothing else in init is skipped)
+    // Stem controls exist only in Mixxx 2.6 and newer: on 2.5 the Stems buttons work as Brake / Spinback.
+    // Mixxx 2.5 logs one warning about the unknown control (with --controller-abort-on-warning the mapping stops)
     DJCi200mk3.stemsAvailable = DJCi200mk3._controlExists("[Channel1]", "stem_count");
 };
 
@@ -94,7 +94,7 @@ DJCi200mk3.shutdown = function() {
         }
         midi.sendShortMsg(DJCi200mk3.SHIFT_STATUS[deck], DJCi200mk3.VINYL_LED, 0x00);
     }
-    midi.sendShortMsg(0xB0, 0x7F, 0x7E);
+    midi.sendShortMsg(0xB0, 0x7F, 0x7E);  // shutdown message, also sent by the other Hercules Inpulse mappings
     midi.sendShortMsg(0x90, DJCi200mk3.BROWSER_LED, 0x00);
 };
 
@@ -116,16 +116,22 @@ DJCi200mk3.loopButton = function(_channel, _control, value, _status, group) {
     const deck = DJCi200mk3._deckFromGroup(group);
     if (engine.getValue(group, "loop_enabled")) {
         DJCi200mk3._press(group, "reloop_toggle");
-        DJCi200mk3.loopInSet[deck] = false;
-    } else if (!DJCi200mk3.loopInSet[deck] || engine.getValue(group, "loop_start_position") < 0) {
-        // Forget the end of a previous loop, otherwise loop_in would start a loop to that old end right away
-        engine.setValue(group, "loop_end_position", -1);
-        DJCi200mk3._press(group, "loop_in");
-        DJCi200mk3.loopInSet[deck] = true;
-    } else {
-        DJCi200mk3._press(group, "loop_out");
-        DJCi200mk3.loopInSet[deck] = false;
+        DJCi200mk3.loopIn[deck] = -1;
+        return;
     }
+    // Loop out only if the loop start is still the one set by this button (not by a beatloop or hot cue meanwhile)
+    if (DJCi200mk3.loopIn[deck] >= 0 && engine.getValue(group, "loop_start_position") === DJCi200mk3.loopIn[deck]) {
+        DJCi200mk3._press(group, "loop_out");
+        if (engine.getValue(group, "loop_enabled")) {
+            DJCi200mk3.loopIn[deck] = -1;
+            return;
+        }
+        // Mixxx ignores a loop out before the loop in (e.g. after seeking back): set a new loop in here instead
+    }
+    // Forget the end of a previous loop, otherwise loop_in would start a loop to that old end right away
+    engine.setValue(group, "loop_end_position", -1);
+    DJCi200mk3._press(group, "loop_in");
+    DJCi200mk3.loopIn[deck] = engine.getValue(group, "loop_start_position");
 };
 
 // SHIFT + Loop: toggles Vinyl (scratch) mode for the deck
@@ -169,7 +175,12 @@ DJCi200mk3.stemsRightButton = function(_channel, _control, value, _status, group
         }
         return;
     }
-    engine.spinback(DJCi200mk3._deckFromGroup(group), value > 0, DJCi200mk3.spinbackFactor);
+    const deck = DJCi200mk3._deckFromGroup(group);
+    if (value ? !engine.getValue(group, "play") : !DJCi200mk3.spinbackHeld[deck]) {
+        return;  // deck stopped, or on release: Spinback was not started or the jog took over
+    }
+    DJCi200mk3.spinbackHeld[deck] = value > 0;
+    engine.spinback(deck, value > 0, DJCi200mk3.spinbackFactor);
 };
 
 // SHIFT + right Stems button: double the loop
@@ -183,8 +194,8 @@ DJCi200mk3._setVinylLed = function(deck) {
     midi.sendShortMsg(DJCi200mk3.SHIFT_STATUS[deck], DJCi200mk3.VINYL_LED, DJCi200mk3.vinylMode[deck] ? 0x7F : 0x00);
 };
 
-// SHIFT + Stems: halve / double the active loop (also a manual one); without a loop, the beatloop size
-// (Mixxx ignores a loop that would be too short or reach past the end of the track)
+// SHIFT + Stems: halve / double the active loop (also a manual one); without a loop, only the beatloop size
+// shown in Mixxx changes (Mixxx ignores a loop that would be too short or reach past the end of the track)
 DJCi200mk3._resizeLoop = function(group, factor) {
     if (engine.getValue(group, "loop_enabled")) {
         engine.setValue(group, "loop_scale", factor);
@@ -259,12 +270,12 @@ DJCi200mk3.fxMixKnob = function(_channel, _control, value, status, _group) {
 };
 
 // Functions of the shared knobs: knob = physical knob, other = the second function on the same knob,
-// group / key = controlled Mixxx control, snap = round the value to whole numbers (key in semitones)
+// group / key = controlled Mixxx control, steps = whole numbers from -steps to +steps (key in semitones)
 DJCi200mk3.KNOB_FUNCTIONS = {
     high: {knob: "gainHigh", other: "gain", group: deck => `[EqualizerRack1_[Channel${deck}]_Effect1]`, key: "parameter3"},
     gain: {knob: "gainHigh", other: "high", group: deck => `[Channel${deck}]`, key: "pregain"},
     mid: {knob: "mid", other: "key", group: deck => `[EqualizerRack1_[Channel${deck}]_Effect1]`, key: "parameter2"},
-    key: {knob: "mid", other: "mid", group: deck => `[Channel${deck}]`, key: "pitch_adjust", snap: true},
+    key: {knob: "mid", other: "mid", group: deck => `[Channel${deck}]`, key: "pitch_adjust", steps: 3},
     low: {knob: "low", other: "fxSuper", group: deck => `[EqualizerRack1_[Channel${deck}]_Effect1]`, key: "parameter1"},
     fxSuper: {knob: "low", other: "low", group: deck => `[EffectRack1_EffectUnit${deck}]`, key: "super1"},
     filter: {knob: "filter", other: "fx", group: deck => `[QuickEffectRack1_[Channel${deck}]]`, key: "super1"},
@@ -274,7 +285,7 @@ DJCi200mk3.KNOB_FUNCTIONS = {
 // which = name of the knob function in KNOB_FUNCTIONS
 DJCi200mk3._pickup = function(status, which, value) {
     const deck = DJCi200mk3._deck(status);
-    const {knob: knobName, other, group: groupOf, key, snap} = DJCi200mk3.KNOB_FUNCTIONS[which];
+    const {knob: knobName, other, group: groupOf, key, steps} = DJCi200mk3.KNOB_FUNCTIONS[which];
     const group = groupOf(deck);
     if (!DJCi200mk3.knob[deck][knobName]) {
         DJCi200mk3.knob[deck][knobName] = {pos: null, locked: {}, lastSet: {}};
@@ -300,9 +311,10 @@ DJCi200mk3._pickup = function(status, which, value) {
     k.pos = knobPos;
 
     if (k.locked[which]) {
-        engine.setParameter(group, key, knobPos);
-        if (snap) {
-            engine.setValue(group, key, Math.round(engine.getValue(group, key)));
+        if (steps) {
+            engine.setValue(group, key, Math.round((knobPos * 2 - 1) * steps));
+        } else {
+            engine.setParameter(group, key, knobPos);
         }
         k.lastSet[which] = engine.getParameter(group, key);
     }
@@ -340,10 +352,10 @@ DJCi200mk3.scratchWheel = function(_channel, _control, value, status, group) {
     const dir = DJCi200mk3._relative(value);
     switch (DJCi200mk3.scratchAction[deck]) {
     case DJCi200mk3.ACTION_SCRATCH:
-        engine.scratchTick(deck, dir * DJCi200mk3.scratchScale);
+        engine.scratchTick(deck, dir);
         break;
     case DJCi200mk3.ACTION_SEEK:
-        engine.scratchTick(deck, dir * DJCi200mk3.scratchScale * DJCi200mk3.scratchShiftMultiplier);
+        engine.scratchTick(deck, dir * Math.round(DJCi200mk3.scratchShiftMultiplier));
         break;
     default:
         engine.setValue(group, "jog", dir * DJCi200mk3.bendScale);
@@ -363,14 +375,25 @@ DJCi200mk3._touch = function(deck, touched, action) {
         }
         DJCi200mk3.scratchAction[deck] = action;
     } else {
-        engine.scratchDisable(deck);
+        // Only end a scratch this touch started (a Brake / Spinback must keep running after a pitch bend touch)
+        const started = DJCi200mk3.scratchAction[deck];
+        if (started === DJCi200mk3.ACTION_SCRATCH || started === DJCi200mk3.ACTION_SEEK) {
+            engine.scratchDisable(deck);
+        }
         DJCi200mk3.scratchAction[deck] = DJCi200mk3.ACTION_NONE;
     }
 };
 
 DJCi200mk3._scratchEnable = function(deck) {
+    // Catching the record during a Brake / Spinback: end it first, otherwise Mixxx stops the deck
+    if (engine.isScratching(deck)) {
+        engine.brake(deck, false);
+    }
+    DJCi200mk3.spinbackHeld[deck] = false;
+    // Scratch speed: fewer ticks per revolution = each tick moves the track further
+    const intervalsPerRev = Math.round(248 / DJCi200mk3.scratchScale);
     const alpha = 1.0 / 8;
-    engine.scratchEnable(deck, 248, 33 + 1 / 3, alpha, alpha / 32);
+    engine.scratchEnable(deck, intervalsPerRev, 33 + 1 / 3, alpha, alpha / 32);
 };
 
 // === BEATMATCH GUIDE – TEMPO AND BEAT ALIGN ARROWS ===
@@ -388,11 +411,8 @@ DJCi200mk3._updateGuide = function() {
         const group = `[Channel${deck}]`;
         const state = DJCi200mk3._guideState(group, `[Channel${3 - deck}]`);
 
-        // Which fader direction speeds up depends on the Mixxx setting (rate_dir)
-        let upIsFaster = engine.getValue(group, "rate_dir") >= 0;
-        if (DJCi200mk3.guideTempoInvert) {
-            upIsFaster = !upIsFaster;
-        }
+        // The fader sends the lowest value at the top, so with the default rate_dir (1) down is faster
+        const upIsFaster = engine.getValue(group, "rate_dir") < 0;
         DJCi200mk3._arrow(deck, "tempoUp", upIsFaster ? state.faster : state.slower);
         DJCi200mk3._arrow(deck, "tempoDown", upIsFaster ? state.slower : state.faster);
         DJCi200mk3._arrow(deck, "alignBack", state.back);
