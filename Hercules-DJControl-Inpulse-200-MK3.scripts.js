@@ -24,6 +24,7 @@ DJCi200mk3.browseFastStep = engine.getSetting("browseFastStep") ?? 10;
 // === CONSTANTS AND STATE ===
 
 DJCi200mk3.PICKUP_THRESHOLD = 0.03;  // shared knobs: how close (0–1) the knob must be to "catch" the value
+DJCi200mk3.LOOP_RESIZE_TICKS = 64;  // SHIFT + jog ring: ticks per halving / doubling of the loop
 
 // What the jog wheel is currently doing
 DJCi200mk3.ACTION_NONE = 0;     // nothing (jog not touched)
@@ -31,10 +32,10 @@ DJCi200mk3.ACTION_SCRATCH = 1;  // scratch
 DJCi200mk3.ACTION_SEEK = 2;     // fast seek (SHIFT)
 DJCi200mk3.ACTION_BEND = 3;     // tempo nudge while playing
 
-DJCi200mk3.SHIFT_STATUS = {1: 0x94, 2: 0x95};  // MIDI channel of the SHIFT layer of deck A / B
+DJCi200mk3.SHIFT_STATUS = {1: 0x94, 2: 0x95};  // MIDI status byte of the SHIFT layer of deck A / B
 DJCi200mk3.VINYL_LED = 0x03;                   // Vinyl LED (on the SHIFT layer of the Loop button)
 DJCi200mk3.BROWSER_LED = 0x04;                 // browser button LED
-DJCi200mk3.DECK_STATUS = {1: 0x91, 2: 0x92};   // MIDI channel of the buttons / LEDs of deck A / B
+DJCi200mk3.DECK_STATUS = {1: 0x91, 2: 0x92};   // MIDI status byte of the buttons / LEDs of deck A / B
 // Beatmatch Guide arrows on each deck (LED code, same for deck A and B)
 DJCi200mk3.ARROW = {
     alignBack: 0x21,     // Beat Align, left arrow below the jog: turn the jog backward (deck is ahead)
@@ -46,7 +47,9 @@ DJCi200mk3.ARROW = {
 DJCi200mk3.vinylMode = {1: true, 2: true};
 DJCi200mk3.scratchAction = {1: DJCi200mk3.ACTION_NONE, 2: DJCi200mk3.ACTION_NONE};
 DJCi200mk3.loopIn = {1: -1, 2: -1};  // Loop button: loop start position it has set, -1 = none
-DJCi200mk3.spinbackHeld = {1: false, 2: false};  // right Stems button is holding a Spinback
+DJCi200mk3.spinbackHeld = {1: false, 2: false};  // a right Stems button is holding a Spinback
+DJCi200mk3.brakeStarted = {1: false, 2: false};  // Brake / Spinback started by the mapping (may still be running)
+DJCi200mk3.loopResizeTicks = {1: 0, 2: 0};  // SHIFT + jog ring: ticks turned since the last loop change
 // State per deck and physical knob: last position, "caught" values
 DJCi200mk3.knob = {1: {}, 2: {}};
 DJCi200mk3.guideTimer = 0;
@@ -145,64 +148,82 @@ DJCi200mk3.vinylButton = function(_channel, _control, value, status, _group) {
     DJCi200mk3._setVinylLed(deck);
 };
 
-// Left Stems button: instrumental only (stem track on Mixxx 2.6+, press again = all stems),
-// otherwise Brake – the track brakes to a stop (like a turntable switched off)
-DJCi200mk3.stemsLeftButton = function(_channel, _control, value, _status, group) {
+// Stems buttons: on a stem track (Mixxx 2.6+) left = instrumental only, right = vocals only (press again = all stems);
+// otherwise Brake / Spinback, the same as with SHIFT
+DJCi200mk3.stemsLeftButton = function(channel, control, value, status, group) {
     if (DJCi200mk3._stemsActive(group)) {
         if (value) {
             DJCi200mk3._toggleStems(group, false);
         }
         return;
     }
-    if (!value || !engine.getValue(group, "play")) {
-        return;
-    }
-    engine.brake(DJCi200mk3._deckFromGroup(group), true, DJCi200mk3.brakeFactor);
+    DJCi200mk3.brakeButton(channel, control, value, status, group);
 };
 
-// SHIFT + left Stems button: halve the loop
-DJCi200mk3.loopHalve = function(_channel, _control, value, _status, group) {
-    if (value) {
-        DJCi200mk3._resizeLoop(group, 0.5);
-    }
-};
-
-// Right Stems button: vocals only (stem track on Mixxx 2.6+, press again = all stems),
-// otherwise Spinback – while held, the record spins backward; on release it plays on (a long hold stops the deck)
-DJCi200mk3.stemsRightButton = function(_channel, _control, value, _status, group) {
-    if (DJCi200mk3._stemsActive(group)) {
+DJCi200mk3.stemsRightButton = function(channel, control, value, status, group) {
+    // A release always ends a held Spinback, also when SHIFT was pressed or released meanwhile
+    if (DJCi200mk3._stemsActive(group) && (value || !DJCi200mk3.spinbackHeld[DJCi200mk3._deckFromGroup(group)])) {
         if (value) {
             DJCi200mk3._toggleStems(group, true);
         }
         return;
     }
-    const deck = DJCi200mk3._deckFromGroup(group);
-    if (value ? !engine.getValue(group, "play") : !DJCi200mk3.spinbackHeld[deck]) {
-        return;  // deck stopped, or on release: Spinback was not started or the jog took over
-    }
-    DJCi200mk3.spinbackHeld[deck] = value > 0;
-    engine.spinback(deck, value > 0, DJCi200mk3.spinbackFactor);
+    DJCi200mk3.spinbackButton(channel, control, value, status, group);
 };
 
-// SHIFT + right Stems button: double the loop
-DJCi200mk3.loopDouble = function(_channel, _control, value, _status, group) {
-    if (value) {
-        DJCi200mk3._resizeLoop(group, 2);
+// SHIFT + left Stems button: Brake – the track brakes to a stop (like a turntable switched off)
+DJCi200mk3.brakeButton = function(_channel, _control, value, _status, group) {
+    const deck = DJCi200mk3._deckFromGroup(group);
+    if (!value || !engine.getValue(group, "play") || DJCi200mk3._jogHeld(deck)) {
+        return;
     }
+    DJCi200mk3.brakeStarted[deck] = true;
+    engine.brake(deck, true, DJCi200mk3.brakeFactor);
+};
+
+// SHIFT + right Stems button: Spinback – while held, the record spins backward; on release it plays on
+DJCi200mk3.spinbackButton = function(_channel, _control, value, _status, group) {
+    const deck = DJCi200mk3._deckFromGroup(group);
+    if (value) {
+        if (!engine.getValue(group, "play") || DJCi200mk3._jogHeld(deck)) {
+            return;
+        }
+        DJCi200mk3.spinbackHeld[deck] = true;
+        DJCi200mk3.brakeStarted[deck] = true;
+        engine.spinback(deck, true, DJCi200mk3.spinbackFactor);
+    } else if (DJCi200mk3.spinbackHeld[deck]) {  // release: only end a Spinback this button started
+        DJCi200mk3.spinbackHeld[deck] = false;
+        DJCi200mk3.brakeStarted[deck] = false;
+        engine.spinback(deck, false);
+    }
+};
+
+// Brake / Spinback are ignored while the jog wheel is held for scratching or seeking
+DJCi200mk3._jogHeld = function(deck) {
+    const action = DJCi200mk3.scratchAction[deck];
+    return action === DJCi200mk3.ACTION_SCRATCH || action === DJCi200mk3.ACTION_SEEK;
 };
 
 DJCi200mk3._setVinylLed = function(deck) {
     midi.sendShortMsg(DJCi200mk3.SHIFT_STATUS[deck], DJCi200mk3.VINYL_LED, DJCi200mk3.vinylMode[deck] ? 0x7F : 0x00);
 };
 
-// SHIFT + Stems: halve / double the active loop (also a manual one); without a loop, only the beatloop size
-// shown in Mixxx changes (Mixxx ignores a loop that would be too short or reach past the end of the track)
-DJCi200mk3._resizeLoop = function(group, factor) {
-    if (engine.getValue(group, "loop_enabled")) {
-        engine.setValue(group, "loop_scale", factor);
-    } else {
-        DJCi200mk3._press(group, factor < 1 ? "loop_halve" : "loop_double");
+// SHIFT + jog ring: halve (left) / double (right) the active loop, also a manual one, once per LOOP_RESIZE_TICKS
+// (Mixxx ignores a loop that would be too short or reach past the end of the track)
+DJCi200mk3.loopResizeWheel = function(_channel, _control, value, _status, group) {
+    const deck = DJCi200mk3._deckFromGroup(group);
+    const ticks = DJCi200mk3._relative(value);
+    if (!engine.getValue(group, "loop_enabled")) {
+        DJCi200mk3.loopResizeTicks[deck] = 0;
+        return;
     }
+    let total = DJCi200mk3.loopResizeTicks[deck];
+    total = Math.sign(total) === -Math.sign(ticks) ? ticks : total + ticks;  // direction changed: start again
+    if (Math.abs(total) >= DJCi200mk3.LOOP_RESIZE_TICKS) {
+        engine.setValue(group, "loop_scale", total > 0 ? 2 : 0.5);
+        total = 0;
+    }
+    DJCi200mk3.loopResizeTicks[deck] = total;
 };
 
 // Stems buttons control stems: enabled in settings, supported by Mixxx and the loaded track has stems
@@ -293,7 +314,8 @@ DJCi200mk3._pickup = function(status, which, value) {
     }
     const k = DJCi200mk3.knob[deck][knobName];
     const knobPos = DJCi200mk3._midiToParam(value);
-    const current = engine.getParameter(group, key);
+    // A value outside the knob range (e.g. key adjusted by key lock) is caught at the knob's end stop
+    const current = Math.min(Math.max(engine.getParameter(group, key), 0), 1);
 
     k.locked[other] = false;  // the other function will have to be "caught" again
 
@@ -386,10 +408,12 @@ DJCi200mk3._touch = function(deck, touched, action) {
 };
 
 DJCi200mk3._scratchEnable = function(deck) {
-    // Catching the record during a Brake / Spinback: end it first, otherwise Mixxx stops the deck
-    if (engine.isScratching(deck)) {
+    // Catching the record during a Brake / Spinback started by the mapping: end it first, otherwise Mixxx would
+    // end the scratch at once (Spinback) or keep its brake state (Brake)
+    if (DJCi200mk3.brakeStarted[deck] && engine.isScratching(deck)) {
         engine.brake(deck, false);
     }
+    DJCi200mk3.brakeStarted[deck] = false;
     DJCi200mk3.spinbackHeld[deck] = false;
     // Scratch speed: fewer ticks per revolution = each tick moves the track further
     const intervalsPerRev = Math.round(248 / DJCi200mk3.scratchScale);

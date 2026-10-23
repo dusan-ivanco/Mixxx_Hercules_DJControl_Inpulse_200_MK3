@@ -14,10 +14,11 @@
              0x09 jog ring, 0x0A jog top
     Global   0xB0: 0x00 crossfader, 0x01 browser, 0x03/0x04 master/headphones volume (hardware, not mapped)
              0x90: 0x00 browser press, 0x01 BEATMATCH GUIDE, 0x02 MASTER (hardware, only SHIFT + MASTER is mapped), 0x03 Assistant
-    LEDs     0x91: 0x21/0x22 Beat Align left/right, 0x23/0x24 Tempo down/up; 0x94 0x03 Vinyl;
-             0x90: 0x04 browser
+    LEDs     button and pad LEDs use the note of their button; additionally
+             0x91: 0x21/0x22 Beat Align left/right, 0x23/0x24 Tempo down/up; 0x94 0x03 Vinyl;
+             0x90: 0x03 Assistant, 0x04 browser (0x05 blue, 0x07 green)
              SHIFT LEDs (0x93-0x95, pads +0x08) are a separate layer, the controller shows it while SHIFT is held
-    Unused   SHIFT + pitch fader (0xB4 0x08), SHIFT + Assistant, SHIFT + jog ring, SHIFT + deck volume
+    Unused   SHIFT + pitch fader (0xB4 0x08), SHIFT + Assistant, SHIFT + deck volume
 -->
 <MixxxMIDIPreset mixxxVersion="2.5" schemaVersion="1">
     <info>
@@ -43,16 +44,16 @@
         </group>
         <group label="Stems buttons">
             <option variable="useStems" type="boolean" default="true" label="Control stems (Mixxx 2.6 and newer)">
-                <description>For stem tracks the Stems buttons play the instrumental / vocals only. When off, or for other tracks, they work as Brake and Spinback.</description>
+                <description>For stem tracks the Stems buttons play the instrumental / vocals only (Brake and Spinback stay on SHIFT + Stems). When off, or for other tracks, they work as Brake and Spinback with or without SHIFT.</description>
             </option>
             <option variable="vocalsStem" type="integer" min="1" max="4" default="4" label="Vocals stem">
                 <description>Number of the vocals stem in your stem files (NI Stems: 1 drums, 2 bass, 3 other, 4 vocals).</description>
             </option>
-            <option variable="brakeFactor" type="real" min="0.1" max="10.0" step="0.1" precision="1" default="1.0" label="Brake speed">
-                <description>Higher value = the track stops faster.</description>
+            <option variable="brakeFactor" type="real" min="0.6" max="10.0" step="0.1" precision="1" default="1.0" label="Brake speed">
+                <description>Higher value = the track stops faster (lower values than 0.6 would never come to a full stop).</description>
             </option>
-            <option variable="spinbackFactor" type="real" min="0.1" max="10.0" step="0.1" precision="1" default="1.8" label="Spinback length">
-                <description>Higher value = longer backspin.</description>
+            <option variable="spinbackFactor" type="real" min="0.1" max="10.0" step="0.1" precision="1" default="1.8" label="Spinback speed">
+                <description>Higher value = the track spins backward faster.</description>
             </option>
         </group>
         <group label="Beatmatch Guide">
@@ -248,8 +249,8 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>DJCi200mk3.loopHalve</key>
-                <description>SHIFT + left Stems: halve the loop (½) – deck A</description>
+                <key>DJCi200mk3.brakeButton</key>
+                <description>SHIFT + left Stems: Brake – deck A</description>
                 <status>0x94</status>
                 <midino>0x09</midino>
                 <options>
@@ -268,8 +269,8 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>DJCi200mk3.loopDouble</key>
-                <description>SHIFT + right Stems: double the loop (×2) – deck A</description>
+                <key>DJCi200mk3.spinbackButton</key>
+                <description>SHIFT + right Stems: Spinback (hold) – deck A</description>
                 <status>0x94</status>
                 <midino>0x0A</midino>
                 <options>
@@ -473,6 +474,16 @@
                 <key>DJCi200mk3.bendWheel</key>
                 <description>Jog ring: tempo nudge (fine seek when stopped) – deck A</description>
                 <status>0xB1</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>DJCi200mk3.loopResizeWheel</key>
+                <description>SHIFT + jog ring: halve / double the active loop – deck A</description>
+                <status>0xB4</status>
                 <midino>0x09</midino>
                 <options>
                     <script-binding/>
@@ -895,8 +906,8 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>DJCi200mk3.loopHalve</key>
-                <description>SHIFT + left Stems: halve the loop (½) – deck B</description>
+                <key>DJCi200mk3.brakeButton</key>
+                <description>SHIFT + left Stems: Brake – deck B</description>
                 <status>0x95</status>
                 <midino>0x09</midino>
                 <options>
@@ -915,8 +926,8 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>DJCi200mk3.loopDouble</key>
-                <description>SHIFT + right Stems: double the loop (×2) – deck B</description>
+                <key>DJCi200mk3.spinbackButton</key>
+                <description>SHIFT + right Stems: Spinback (hold) – deck B</description>
                 <status>0x95</status>
                 <midino>0x0A</midino>
                 <options>
@@ -1120,6 +1131,16 @@
                 <key>DJCi200mk3.bendWheel</key>
                 <description>Jog ring: tempo nudge (fine seek when stopped) – deck B</description>
                 <status>0xB2</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>DJCi200mk3.loopResizeWheel</key>
+                <description>SHIFT + jog ring: halve / double the active loop – deck B</description>
+                <status>0xB5</status>
                 <midino>0x09</midino>
                 <options>
                     <script-binding/>
@@ -1521,6 +1542,17 @@
             </output>
             <output>
                 <group>[Channel1]</group>
+                <key>keylock</key>
+                <description>PFL LED with SHIFT (key lock) – deck A</description>
+                <status>0x94</status>
+                <midino>0x0C</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
                 <key>loop_enabled</key>
                 <description>Loop LED (loop active) – deck A</description>
                 <status>0x91</status>
@@ -1877,6 +1909,17 @@
                 <description>Sync LED with SHIFT (leader deck) – deck B</description>
                 <status>0x95</status>
                 <midino>0x05</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>keylock</key>
+                <description>PFL LED with SHIFT (key lock) – deck B</description>
+                <status>0x95</status>
+                <midino>0x0C</midino>
                 <on>0x7F</on>
                 <off>0x00</off>
                 <minimum>0.5</minimum>

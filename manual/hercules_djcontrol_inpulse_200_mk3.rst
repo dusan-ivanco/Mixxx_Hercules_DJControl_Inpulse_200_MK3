@@ -29,7 +29,7 @@ This controller has a built-in 4 channel output sound card, with :hwlabel:`MASTE
 
 .. note::
    The :hwlabel:`MASTER` and :hwlabel:`HEADPHONES` volume knobs and the :hwlabel:`MASTER` button are hardware controls of the integrated sound card and are not mapped in Mixxx.
-   The :hwlabel:`MASTER` button routes the main output to the headphones output. :hwlabel:`SHIFT` + :hwlabel:`MASTER` starts and stops recording the mix.
+   The :hwlabel:`MASTER` button routes the main output to the headphones output.
 
 Mapping description
 -------------------
@@ -41,8 +41,8 @@ Decks
 
 Deck A uses effect unit 1, deck B uses effect unit 2.
 
-With Mixxx 2.6 or newer, the Stems buttons control the stems when the loaded track is a stem file.
-For other tracks they work as Brake and Spinback.
+With Mixxx 2.6 or newer, the Stems buttons control the stems when the loaded track is a stem file, and Brake and Spinback move to :hwlabel:`SHIFT` + Stems buttons.
+For other tracks, and with Mixxx 2.5, the Stems buttons work as Brake and Spinback with or without :hwlabel:`SHIFT`.
 
 ===============================================================  ==========================================
 Control                                                          Function
@@ -55,10 +55,10 @@ Play button                                                      Play/Pause the 
 :hwlabel:`SHIFT` + :hwlabel:`SYNC` button                        Make the deck Sync leader.
 :hwlabel:`LOOP` button                                           Manual loop: first press sets the loop in point, second press sets the loop out point, third press disables the loop. A second press before the loop in point sets a new loop in point.
 :hwlabel:`SHIFT` + :hwlabel:`LOOP` button                        Toggle Vinyl (scratch) mode (default: on). The :hwlabel:`LOOP` LED shows the state while :hwlabel:`SHIFT` is held.
-Left Stems button                                                Stem track: play the instrumental only (vocals muted), press again to play all stems. Other tracks: Brake, the track slows down to a stop.
-:hwlabel:`SHIFT` + left Stems button                             Halve the active loop.
-Right Stems button                                               Stem track: play the vocals only, press again to play all stems. Other tracks: Spinback, the track spins backward while the button is held and plays on when released (a long hold stops the deck).
-:hwlabel:`SHIFT` + right Stems button                            Double the active loop.
+Left Stems button                                                Stem track: play the instrumental only (vocals muted), press again to play all stems. Other tracks: Brake.
+:hwlabel:`SHIFT` + left Stems button                             Brake: a playing track slows down to a stop.
+Right Stems button                                               Stem track: play the vocals only, press again to play all stems. Other tracks: Spinback.
+:hwlabel:`SHIFT` + right Stems button                            Spinback: a playing track spins backward while the button is held and plays on when released.
 Headphones button                                                Toggle headphone cueing (PFL).
 :hwlabel:`SHIFT` + Headphones button                             Toggle key lock.
 :hwlabel:`LOAD` button                                           Load the selected track.
@@ -66,6 +66,7 @@ Headphones button                                                Toggle headphon
 Jog wheel top                                                    Scratch when Vinyl mode is on or the deck is stopped, otherwise temporary pitch bend.
 :hwlabel:`SHIFT` + jog wheel top                                 Fast seek through the track.
 Jog wheel ring                                                   Temporary pitch bend while playing, fine seek when stopped.
+:hwlabel:`SHIFT` + jog wheel ring                                Halve (turn left) or double (turn right) the active loop.
 Tempo fader                                                      Adjust the tempo.
 ===============================================================  ==========================================
 
@@ -74,6 +75,8 @@ Mixer
 
 The knobs have a second function on the :hwlabel:`SHIFT` layer. Because one knob controls two values, a value only follows the knob after the knob has reached or crossed it (pickup).
 Nothing jumps when you switch layers.
+When the mapping starts, Mixxx takes over the current positions of the knobs, faders and the tempo fader.
+After that the tempo fader also only takes effect after it has reached the tempo set in Mixxx (soft takeover).
 
 ===============================================================  ==========================================
 Control                                                          Function
@@ -127,7 +130,7 @@ FX Mode
 Control                                                          Function
 ===============================================================  ==========================================
 Pad 1 - 3                                                        Toggle effect 1 - 3 of the deck's effect unit.
-Pad 4                                                            Enable/disable the deck's effect unit for the deck.
+Pad 4                                                            Assign the deck to its effect unit (on/off).
 :hwlabel:`SHIFT` + Pad 1 - 3                                     Load the next effect into slot 1 - 3.
 :hwlabel:`SHIFT` + Pad 4                                         Load the next effect chain preset.
 ===============================================================  ==========================================
