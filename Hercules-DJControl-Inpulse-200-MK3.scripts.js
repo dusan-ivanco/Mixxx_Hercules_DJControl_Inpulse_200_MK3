@@ -98,7 +98,7 @@ DJCi200mk3.shutdown = function() {
         }
         midi.sendShortMsg(DJCi200mk3.SHIFT_STATUS[deck], DJCi200mk3.VINYL_LED, 0x00);
     }
-    midi.sendShortMsg(0xB0, 0x7F, 0x7E);  // shutdown message, also sent by the other Hercules Inpulse mappings
+    midi.sendShortMsg(0xB0, 0x7F, 0x7E);  // shutdown message, also sent by the Inpulse 200 / 500 mappings
     midi.sendShortMsg(0x90, DJCi200mk3.BROWSER_LED, 0x00);
 };
 
@@ -414,10 +414,15 @@ DJCi200mk3._touch = function(deck, touched, action) {
 
 DJCi200mk3._scratchEnable = function(deck) {
     // Catching the record during a Brake / Spinback started by the mapping: end it first (otherwise its timer would
-    // keep driving the deck) and start the scratch from standstill, as a record stopped by the hand
+    // keep driving the deck) and start the scratch from standstill, as a record stopped by the hand.
+    // A caught Brake stays stopped after the release (turntable motor off), a caught Spinback plays on
     const catching = DJCi200mk3.brakeStarted[deck] && engine.isScratching(deck);
     if (catching) {
+        const caughtBrake = !DJCi200mk3.spinbackHeld[deck];
         engine.brake(deck, false);
+        if (caughtBrake) {
+            engine.setValue(`[Channel${deck}]`, "play", 0);
+        }
     }
     DJCi200mk3.brakeStarted[deck] = false;
     DJCi200mk3.spinbackHeld[deck] = false;

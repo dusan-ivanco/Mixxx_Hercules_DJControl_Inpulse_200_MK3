@@ -66,7 +66,7 @@ For other tracks, and with Mixxx 2.5, the Stems buttons work as Brake and Spinba
 * - Left Stems button
   - Stem track: play the instrumental only (vocals muted), press again to play all stems. Other tracks: Brake.
 * - {hwlabel}`SHIFT` + left Stems button
-  - Brake: a playing track slows down to a stop.
+  - Brake: a playing track slows down to a stop. Touching the jog wheel top during the Brake stops the track at once.
 * - Right Stems button
   - Stem track: play the vocals only, press again to play all stems. Other tracks: Spinback.
 * - {hwlabel}`SHIFT` + right Stems button

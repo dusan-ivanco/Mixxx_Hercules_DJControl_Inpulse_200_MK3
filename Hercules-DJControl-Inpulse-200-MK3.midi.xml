@@ -39,7 +39,7 @@
                 <description>:hwbtn:`SHIFT` + jog wheel: how many times faster than scratching it seeks through the track.</description>
             </option>
             <option variable="bendScale" type="real" min="0.1" max="4.0" step="0.1" precision="1" default="1.0" label="Pitch bend strength">
-                <description>How strongly the jog wheel nudges the tempo of a playing track.</description>
+                <description>How strongly the jog wheel nudges the tempo of a playing track (and how fast the jog ring fine-seeks a stopped track).</description>
             </option>
         </group>
         <group label="Stems buttons">
